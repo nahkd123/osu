@@ -16,6 +16,9 @@ using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Osu.Beatmaps;
 using osu.Game.Rulesets.Osu.Scoring;
 using osu.Game.Rulesets.Scoring;
+using osu.Game.Rulesets.Osu.Mods;
+using osu.Game.Rulesets.Objects.Types;
+using osu.Framework.Graphics.Transforms;
 
 namespace osu.Game.Rulesets.Osu.Replays
 {
@@ -30,6 +33,8 @@ namespace osu.Game.Rulesets.Osu.Replays
         /// Mainly for Autopilot.
         /// </summary>
         public bool DelayedMovements; // ModManager.CheckActive(Mods.Relax2);
+
+        public IEasingFunction SliderEasingFunction;
 
         #endregion
 
@@ -51,6 +56,9 @@ namespace osu.Game.Rulesets.Osu.Replays
         {
             defaultHitWindows = new OsuHitWindows();
             defaultHitWindows.SetDifficulty(Beatmap.Difficulty.OverallDifficulty);
+
+            IEnumerable<OsuModVelocityDifferent> velocityMods = mods.OfType<OsuModVelocityDifferent>();
+            SliderEasingFunction = new DefaultEasingFunction(velocityMods.Any() ? velocityMods.First().Style.Value : Easing.None);
         }
 
         #endregion
@@ -375,7 +383,7 @@ namespace osu.Game.Rulesets.Osu.Replays
                 case Slider slider:
                     for (double j = GetFrameDelay(slider.StartTime); j < slider.Duration; j += GetFrameDelay(slider.StartTime + j))
                     {
-                        Vector2 pos = slider.StackedPositionAt(j / slider.Duration);
+                        Vector2 pos = slider.StackedPosition + slider.Path.PositionAt(SliderEasingFunction.ApplyEasing(slider.ProgressAt(j / slider.Duration)));
                         AddFrameToReplay(new OsuReplayFrame(h.StartTime + j, new Vector2(pos.X, pos.Y), action));
                     }
 
